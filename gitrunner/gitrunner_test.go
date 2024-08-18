@@ -175,6 +175,8 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnmergedChanges() {
 	suite.Contains(output, "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus.")
 }
 
+// TODO: Test_MergeMasterIntoFeatureBranch
+
 func TestExampleTestSuite(t *testing.T) {
 	suite.Run(t, new(LocalRepoSuite))
 }

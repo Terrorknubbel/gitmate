@@ -80,6 +80,7 @@ func branchConditionCommands(currentBranch string) []commandrunner.CommandCheck 
 }
 
 func branchRebaseCommands() []commandrunner.CommandCheck {
+	// TODO: Determine master vs main. (git ls-remote --symref origin HEAD | awk '/^ref:/ {print substr($2, 12)}')
 	return []commandrunner.CommandCheck{
 		{Command: "git", Args: []string{"checkout", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master pull fehlgeschlagen."},
