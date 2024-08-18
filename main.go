@@ -5,7 +5,9 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+
 	"github.com/Terrorknubbel/gitmate/gitrunner"
+	"github.com/fatih/color"
 )
 
 func main() {
@@ -19,7 +21,12 @@ func main() {
 	cmd := exec.Command("fzf", "--height", "50%", "--ansi", "--reverse", "--pointer", "👉", "--cycle", "--header", headerText)
 	cmd.Stdin = strings.NewReader(strings.Join(options, "\n"))
 
-	fmt.Println("Merge Automatisierung mit GitMate 🪄")
+	fmt.Print("Merge Automatisierung mit ")
+
+	color.Set(color.FgYellow)
+	defer color.Unset()
+	fmt.Print("GitMate ")
+	fmt.Println("🪄")
 
 	out, err := cmd.Output()
 	if err != nil {
