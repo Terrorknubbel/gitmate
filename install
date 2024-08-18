@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# Script for installing GitMate
+#
+# This script can be executed via
+# curl:
+#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install)"
+# or wget:
+#   sh -c "$(wget -qO- https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install)"
+# or httpie:
+#   sh -c "$(http --download https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install)"
+
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+status_check() {
+	if command -v gitmate 2>&1 > /dev/null; then
+		printf "\n%s\n" "You already have ${BOLD}GitMate${RESET} installed."
+		printf "Run ${YELLOW}gitmate${NC} or ${YELLOW}gitm${NC} in your git project to get started"
+		exit 0
+	fi
+}
+
+unpack(){
+	tar -xzf gitmate.tar.gz
+	rm gitmate.tar.gz
+}
+
+move_to_path(){
+	printf "%s\n" "We require some permissions to move GitMate to /usr/bin"
+
+	if sudo mv gitmate /usr/bin; then
+			sudo ln -s gitmate /usr/bin/gitm
+	else
+			printf "\n%s\n" "Unknown error while installing gitmate"
+			exit 1
+	fi
+}
+
+set_permissions(){
+	if [ -f gitmate ] && ! chmod +x gitmate; then
+			printf "\n%s\n" "Unknown error while installing gitmate"
+			exit 1
+	fi
+	move_to_path
+}
+
+
+download_gitmate(){
+	GITMATE_HOST="https://github.com/Terrorknubbel/gitmate/releases/latest/download/gitmate_Linux_x86_64.tar.gz"
+
+	printf "\n%s\n" "Downloading GitMate from '${BOLD}$GITMATE_HOST${RESET}'…"
+
+	if curl -fsSL $GITMATE_HOST -o gitmate.tar.gz; then
+		unpack
+		set_permissions
+	else
+		printf "\n%s\n" "Unknown error while downloading GitMate"
+		exit 1
+	fi
+}
+
+main () {
+	status_check
+	download_gitmate
+
+	printf "${BOLD}${ORANGE_FG}%s\n" ""
+	printf "%s\n" "                   "
+	printf "%s\n" "   _____ _ _   __  __       _ "
+	printf "%s\n" "  / ____(_| | |  \\/  |     | | "
+	printf "%s\n" " | |  __ _| |_| \\  / | __ _| |_ ___ "
+	printf "%s\n" " | | |_ | | __| |\\/| |/ _' | __/ _ \\ "
+	printf "%s\n" " | |__| | | |_| |  | | (_| | ||  __/ "
+	printf "%s\n" "  \\_____|_|\\__|_|  |_|\\__,_|\\__\\___| "
+	printf "${RESET}\n%s" ""
+
+	printf "\t\t%s\n" ".... is now installed 🪄"
+	printf "Run ${YELLOW}gitmate${NC} or ${YELLOW}gitm${NC} in your git project to get started"
+}
+
+main
