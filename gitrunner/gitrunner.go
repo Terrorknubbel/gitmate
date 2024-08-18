@@ -1,6 +1,8 @@
 package gitrunner
 
 import (
+	"bufio"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -47,6 +49,8 @@ func Staging() {
 	}
 
 	printer.Success("Merge erfolgreich.")
+
+	handleFinalPush()
 }
 
 func prerequisiteCommands() []commandrunner.CommandCheck {
@@ -93,5 +97,38 @@ func branchMergeCommands(featureBranch string) []commandrunner.CommandCheck {
 		{Command: "git", Args: []string{"checkout", "staging"}, Output: "Merge " + featureBranch + " in staging…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", featureBranch}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
+	}
+}
+
+func finalPushCommands() []commandrunner.CommandCheck {
+	return []commandrunner.CommandCheck{
+		{Command: "git", Args: []string{"push"}, Output: "Pushe zum Remote Branch…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Push fehlgeschlagen."},
+	}
+}
+
+func handleFinalPush() {
+	reader := bufio.NewReader(os.Stdin)
+	printer.Warning("Merge zum Remote Branch pushen? (y/n)")
+
+	input, err := reader.ReadString('\n')
+	if err != nil {
+		printer.Error(err)
+		return
+	}
+
+	// Clean the input
+	input = strings.TrimSpace(strings.ToLower(input))
+
+	if input == "y" || input == "yes" {
+		err = commandrunner.RunCommands(finalPushCommands())
+
+		if err != nil {
+			printer.Error(err)
+		}
+	} else if input == "n" || input == "no" {
+		printer.ErrorString("Keine Änderungen gepusht.")
+	} else {
+		printer.ErrorString("Ungültige Eingabe. Bitte gebe 'y' oder 'n' ein.")
+		handleFinalPush()
 	}
 }
