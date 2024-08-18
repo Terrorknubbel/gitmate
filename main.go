@@ -14,10 +14,12 @@ func main() {
 		"Master",
 	}
 
-	headerText := "Select an option to run the corresponding script:"
+	headerText := "Wähle den Ziel-Branch aus:"
 
 	cmd := exec.Command("fzf", "--height", "50%", "--ansi", "--reverse", "--pointer", "👉", "--cycle", "--header", headerText)
 	cmd.Stdin = strings.NewReader(strings.Join(options, "\n"))
+
+	fmt.Println("Merge Automatisierung mit GitMate 🪄")
 
 	out, err := cmd.Output()
 	if err != nil {
@@ -30,6 +32,6 @@ func main() {
 	case "Staging":
 		gitrunner.Staging()
 	default:
-		fmt.Println("No valid option selected.")
+		fmt.Println("Diese Option wird aktuell nicht unterstützt.")
 	}
 }
