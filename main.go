@@ -2,43 +2,62 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os/exec"
-	"strings"
+	"os"
+	"sync"
 
 	"github.com/Terrorknubbel/gitmate/gitrunner"
 	"github.com/fatih/color"
+	fzf "github.com/junegunn/fzf/src"
 )
 
 func main() {
-	options := []string{
-		"Staging",
-		"Master",
+	inputChan := make(chan string)
+	outputChan := make(chan string)
+	var wg sync.WaitGroup
+
+	go func() {
+		defer close(inputChan)
+		for _, s := range []string{"Staging", "Master"} {
+			inputChan <- s
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for selectedOption := range outputChan {
+			switch selectedOption {
+			case "Staging":
+				gitrunner.Staging()
+			default:
+				fmt.Println("Diese Option wird aktuell nicht unterstützt.")
+			}
+		}
+	}()
+
+	options, err := fzf.ParseOptions(
+		true,
+		[]string{"--height=50%", "--ansi", "--reverse", "--pointer=👉", "--cycle", "--header=Wähle den Ziel-Branch aus:"},
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(fzf.ExitError)
 	}
 
-	headerText := "Wähle den Ziel-Branch aus:"
-
-	cmd := exec.Command("fzf", "--height", "50%", "--ansi", "--reverse", "--pointer", "👉", "--cycle", "--header", headerText)
-	cmd.Stdin = strings.NewReader(strings.Join(options, "\n"))
+	options.Input = inputChan
+	options.Output = outputChan
 
 	fmt.Print("Merge Automatisierung mit ")
-
 	color.Set(color.FgYellow)
-	defer color.Unset()
-	fmt.Print("GitMate ")
-	fmt.Println("🪄")
+	fmt.Print("GitMate 🪄")
+	color.Unset()
 
-	out, err := cmd.Output()
+	code, err := fzf.Run(options)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintln(os.Stderr, err.Error())
+		os.Exit(code)
 	}
 
-	selectedOption := strings.TrimSpace(string(out))
-
-	switch selectedOption {
-	case "Staging":
-		gitrunner.Staging()
-	default:
-		fmt.Println("Diese Option wird aktuell nicht unterstützt.")
-	}
+	close(outputChan)
+	wg.Wait()
 }
