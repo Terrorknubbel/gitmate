@@ -10,7 +10,40 @@ import (
 	fzf "github.com/junegunn/fzf/src"
 )
 
+func handleFzfPreview() {
+	if len(os.Args) > 1 && os.Args[1] == "--preview" {
+		option := os.Args[2]
+
+		var updateLine string
+
+		if option == "Staging" {
+			updateLine = "Aktualisiert den Feature, Staging & Master Branch"
+		} else {
+			updateLine = "Aktualisiert den Feature und Master Branch"
+		}
+
+		output :=
+`Bringt den aktuellen Feature Branch in den %s Branch.
+
+Folgende Schritte werden durchgeführt:
+ ↳ Überprüfung auf sauberen Branch Status (alle Commits gepusht, remote Status, …)
+ ↳ %s
+ ↳ Merged Master in den Feature Branch
+ ↳ Merged den Feature Branch in den %s Branch
+
+Im Falle von Merge Konflikten oder anderen Fehlern wird sofortig abgebrochen.
+Es wird NICHT automatisch gepusht. Dies passiert erst nach einer manuellen Bestätigung.
+`
+		s := fmt.Sprintf(output, option, updateLine, option)
+		fmt.Print(s)
+
+		os.Exit(0)
+	}
+}
+
 func main() {
+	handleFzfPreview()
+
 	inputChan := make(chan string)
 	outputChan := make(chan string)
 	var wg sync.WaitGroup
@@ -40,12 +73,14 @@ func main() {
 	options, err := fzf.ParseOptions(
 		true,
 		[]string{
-			"--height=50%",
+			"--height=95%",
 			"--ansi",
 			"--reverse",
 			"--pointer=👉",
 			"--cycle",
 			"--header=Wähle den Ziel-Branch aus:",
+			"--preview=gitmate --preview {}",
+			"--preview-window=wrap",
 		},
 	)
 
