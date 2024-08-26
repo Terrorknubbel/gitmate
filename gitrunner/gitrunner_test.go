@@ -17,7 +17,7 @@ type LocalRepoSuite struct {
 	remoteRepoDir                 string
 }
 
-func CaptureStderr(f func()) string {
+func CaptureStderr(f func(action Action), action Action) string {
 	oldStderr := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stderr = w
@@ -26,7 +26,7 @@ func CaptureStderr(f func()) string {
 	oldStdout := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
 
-	f()
+	f(action)
 
 	outC := make(chan string)
 
@@ -82,15 +82,14 @@ func (suite *LocalRepoSuite) TearDownTest() {
 }
 
 func (suite *LocalRepoSuite) Test_PrerequisiteCommands_NotInAGitDir() {
-	output := CaptureStderr(Staging)
+	output := CaptureStderr(Run, Staging)
 
 	suite.Contains(output, "Du befindest dich in keinem Git Verzeichnis.")
 }
 
 func (suite *LocalRepoSuite) Test_BranchConditionCommands_NotInAFeatureBranch() {
 	exec.Command("git", "init").Run()
-	output := CaptureStderr(Staging)
-
+	output := CaptureStderr(Run, Staging)
 	suite.Contains(output, "Du befindest dich in keinem Feature Branch.")
 }
 
@@ -98,7 +97,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_CurrentBranchIsStaging
 	exec.Command("git", "init").Run()
 	exec.Command("git", "checkout", "-b", "staging").Run()
 
-	output := CaptureStderr(Staging)
+	output := CaptureStderr(Run, Staging)
 
 	suite.Contains(output, "Du befindest dich in keinem Feature Branch.")
 }
@@ -111,7 +110,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnstashedChanges() {
 
 	outfile.WriteString("Commit 1")
 
-	output := CaptureStderr(Staging)
+	output := CaptureStderr(Run, Staging)
 
 	suite.Contains(output, "Es gibt Änderungen, die nicht zum Commit vorgesehen sind. Bitte Committe oder Stashe diese vor einem Merge.")
 }
@@ -128,7 +127,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_NoRemoteBranch() {
 	exec.Command("git", "add", ".").Run()
 	exec.Command("git", "commit", "-m", "commit1").Run()
 
-	output := CaptureStderr(Staging)
+	output := CaptureStderr(Run, Staging)
 
 	suite.Contains(output, "Der Branch feature_branch existiert nicht auf remote.")
 }
@@ -144,7 +143,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnstagedChanges() {
 	exec.Command("git", "add", ".").Run()
 	exec.Command("git", "commit", "-m", "commit1").Run()
 
-	output := CaptureStderr(Staging)
+	output := CaptureStderr(Run, Staging)
 
 	suite.Contains(output, "Es gibt nicht gepushte Änderungen. Bitte pushe diese vor einem Merge.")
 }
@@ -170,7 +169,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnmergedChanges() {
 
 	os.Chdir(suite.localRepoDir)
 
-	output := CaptureStderr(Staging)
+	output := CaptureStderr(Run, Staging)
 
 	suite.Contains(output, "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus.")
 }

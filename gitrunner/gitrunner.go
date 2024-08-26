@@ -10,11 +10,17 @@ import (
 	"github.com/Terrorknubbel/gitmate/printer"
 )
 
-func Staging() {
+const (
+	Staging Action = iota
+	Master
+)
+
+type Action int
+
+func Run(action Action) {
 	printer.Success("Überprüfe Vorbedingungen")
 
 	err := commandrunner.RunCommands(prerequisiteCommands())
-
 	if err != nil {
 		printer.Error(err)
 		return
@@ -23,26 +29,29 @@ func Staging() {
 	currentBranch, err := getCurrentBranch()
 	if err != nil {
 		printer.Error(err)
+		return
 	}
 
 	err = commandrunner.RunCommands(branchConditionCommands(currentBranch))
-
 	if err != nil {
 		printer.Error(err)
 		return
 	}
 
-	printer.Success("Bringe den Master und Staging Branch auf den aktuellsten Stand")
+	switch action {
+	case Staging:
+		printer.Success("Bringe den Master und Staging Branch auf den aktuellsten Stand")
+	case Master:
+		printer.Success("Bringe den Master Branch auf den aktuellsten Stand")
+	}
 
-	err = commandrunner.RunCommands(branchRebaseCommands())
-
+	err = commandrunner.RunCommands(branchRebaseCommands(action))
 	if err != nil {
 		printer.Error(err)
 		return
 	}
 
-	err = commandrunner.RunCommands(branchMergeCommands(currentBranch))
-
+	err = commandrunner.RunCommands(branchMergeCommands(currentBranch, action))
 	if err != nil {
 		printer.Error(err)
 		return
@@ -79,23 +88,39 @@ func branchConditionCommands(currentBranch string) []commandrunner.CommandCheck 
 	}
 }
 
-func branchRebaseCommands() []commandrunner.CommandCheck {
+func branchRebaseCommands(action Action) []commandrunner.CommandCheck {
 	// TODO: Determine master vs main. (git ls-remote --symref origin HEAD | awk '/^ref:/ {print substr($2, 12)}')
-	return []commandrunner.CommandCheck{
+	masterCommands := []commandrunner.CommandCheck{
 		{Command: "git", Args: []string{"checkout", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master pull fehlgeschlagen."},
+	}
+
+	stagingCommands := append( masterCommands, []commandrunner.CommandCheck{
 		{Command: "git", Args: []string{"checkout", "staging"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging pull fehlgeschlagen."},
+	}...)
+
+	if action == Staging {
+		return stagingCommands
 	}
+
+	return masterCommands
 }
 
 
-func branchMergeCommands(featureBranch string) []commandrunner.CommandCheck {
+func branchMergeCommands(featureBranch string, action Action) []commandrunner.CommandCheck {
+	var finalBranch string
+	if action == Staging {
+		finalBranch = "staging"
+	} else {
+		finalBranch = "master"
+	}
+
 	return []commandrunner.CommandCheck{
 		{Command: "git", Args: []string{"checkout", featureBranch}, Output: "Merge Master Branch in " + featureBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: featureBranch + " checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
-		{Command: "git", Args: []string{"checkout", "staging"}, Output: "Merge " + featureBranch + " in staging…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
+		{Command: "git", Args: []string{"checkout", finalBranch}, Output: "Merge " + featureBranch + " in staging…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", featureBranch}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
 	}

@@ -28,7 +28,9 @@ func main() {
 		for selectedOption := range outputChan {
 			switch selectedOption {
 			case "Staging":
-				gitrunner.Staging()
+				gitrunner.Run(gitrunner.Staging)
+			case "Master":
+				gitrunner.Run(gitrunner.Master)
 			default:
 				fmt.Println("Diese Option wird aktuell nicht unterstützt.")
 			}
@@ -37,8 +39,16 @@ func main() {
 
 	options, err := fzf.ParseOptions(
 		true,
-		[]string{"--height=50%", "--ansi", "--reverse", "--pointer=👉", "--cycle", "--header=Wähle den Ziel-Branch aus:"},
+		[]string{
+			"--height=50%",
+			"--ansi",
+			"--reverse",
+			"--pointer=👉",
+			"--cycle",
+			"--header=Wähle den Ziel-Branch aus:",
+		},
 	)
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(fzf.ExitError)
