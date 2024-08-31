@@ -24,6 +24,7 @@ status_check() {
 unpack(){
 	tar -xzf gitmate.tar.gz
 	rm gitmate.tar.gz
+  rm LICENSE
 }
 
 move_to_path(){
