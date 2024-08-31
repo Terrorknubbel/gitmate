@@ -1,4 +1,4 @@
-package gitrunner
+package cmd
 
 import (
 	"bytes"
@@ -12,9 +12,9 @@ import (
 
 type LocalRepoSuite struct {
 	suite.Suite
-	originalDir                   string
-	localRepoDir                  string
-	remoteRepoDir                 string
+	originalDir   string
+	localRepoDir  string
+	remoteRepoDir string
 }
 
 func CaptureStderr(f func(action Action), action Action) string {
@@ -31,9 +31,9 @@ func CaptureStderr(f func(action Action), action Action) string {
 	outC := make(chan string)
 
 	go func() {
-			var buf bytes.Buffer
-			io.Copy(&buf, r)
-			outC <- buf.String()
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
 	}()
 
 	w.Close()
@@ -65,16 +65,7 @@ func (suite *LocalRepoSuite) prepareLocalAndRemoteRepoWithFeatureBranch() {
 	exec.Command("git", "checkout", "-b", "feature_branch").Run()
 
 	suite.remoteRepoDir = remoteRepo
-
-	// output, err := exec.Command("git", "branch", "--show-current").Output()
-	// if err != nil {
-	// 	t.Fatalf("What: %v, %s", err, string(output))
-	// }
-
-	// outputString := strings.TrimSpace(string(output[:]))
-	// t.Errorf(outputString)
 }
-
 
 func (suite *LocalRepoSuite) TearDownTest() {
 	os.RemoveAll(suite.localRepoDir)
@@ -82,14 +73,16 @@ func (suite *LocalRepoSuite) TearDownTest() {
 }
 
 func (suite *LocalRepoSuite) Test_PrerequisiteCommands_NotInAGitDir() {
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 
 	suite.Contains(output, "Du befindest dich in keinem Git Verzeichnis.")
 }
 
 func (suite *LocalRepoSuite) Test_BranchConditionCommands_NotInAFeatureBranch() {
 	exec.Command("git", "init").Run()
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 	suite.Contains(output, "Du befindest dich in keinem Feature Branch.")
 }
 
@@ -97,7 +90,8 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_CurrentBranchIsStaging
 	exec.Command("git", "init").Run()
 	exec.Command("git", "checkout", "-b", "staging").Run()
 
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 
 	suite.Contains(output, "Du befindest dich in keinem Feature Branch.")
 }
@@ -110,7 +104,8 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnstashedChanges() {
 
 	outfile.WriteString("Commit 1")
 
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 
 	suite.Contains(output, "Es gibt Änderungen, die nicht zum Commit vorgesehen sind. Bitte Committe oder Stashe diese vor einem Merge.")
 }
@@ -127,7 +122,8 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_NoRemoteBranch() {
 	exec.Command("git", "add", ".").Run()
 	exec.Command("git", "commit", "-m", "commit1").Run()
 
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 
 	suite.Contains(output, "Der Branch feature_branch existiert nicht auf remote.")
 }
@@ -143,7 +139,8 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnstagedChanges() {
 	exec.Command("git", "add", ".").Run()
 	exec.Command("git", "commit", "-m", "commit1").Run()
 
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 
 	suite.Contains(output, "Es gibt nicht gepushte Änderungen. Bitte pushe diese vor einem Merge.")
 }
@@ -169,7 +166,8 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnmergedChanges() {
 
 	os.Chdir(suite.localRepoDir)
 
-	output := CaptureStderr(Run, Staging)
+	c := NewConfig()
+	output := CaptureStderr(c.RunMergehelper, Staging)
 
 	suite.Contains(output, "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus.")
 }

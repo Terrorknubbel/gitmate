@@ -1,13 +1,20 @@
-package printer
+package gitmate
 
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 
 	"github.com/fatih/color"
 )
 
-func Info(output string) {
+var defaultLogger atomic.Pointer[Logger]
+
+func DefaultLogger() *Logger { return defaultLogger.Load() }
+
+type Logger struct{}
+
+func (l *Logger) Info(output string) {
 	if output == "" {
 		return
 	}
@@ -17,7 +24,7 @@ func Info(output string) {
 	fmt.Println(output)
 }
 
-func Warning(output string) {
+func (l *Logger) Warning(output string) {
 	if output == "" {
 		return
 	}
@@ -27,7 +34,7 @@ func Warning(output string) {
 	fmt.Println(output)
 }
 
-func Success(output string) {
+func (l *Logger) Success(output string) {
 	if output == "" {
 		return
 	}
@@ -37,7 +44,7 @@ func Success(output string) {
 	fmt.Println(output)
 }
 
-func Error(err error) {
+func (l *Logger) Error(err error) {
 	color.Set(color.FgRed)
 	defer color.Unset()
 
@@ -45,7 +52,7 @@ func Error(err error) {
 	fmt.Fprintln(os.Stderr, " Abbruch.")
 }
 
-func ErrorString(output string) {
+func (l *Logger) ErrorString(output string) {
 	if output == "" {
 		return
 	}

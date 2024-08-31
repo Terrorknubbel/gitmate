@@ -1,15 +1,13 @@
-package commandrunner
+package cmd
 
 import (
 	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
-
-	"github.com/Terrorknubbel/gitmate/printer"
 )
 
-type CommandCheck struct {
+type Command struct {
 	Command      string
 	Args         []string
 	Output       string
@@ -18,9 +16,9 @@ type CommandCheck struct {
 	ErrorMessage string
 }
 
-func RunCommands(commands []CommandCheck) error {
+func (c *Config) RunCommands(commands []Command) error {
 	for _, command := range commands {
-		err := run(command)
+		err := c.runCommand(command)
 		if err != nil {
 			return err
 		}
@@ -29,8 +27,8 @@ func RunCommands(commands []CommandCheck) error {
 	return nil
 }
 
-func run(command CommandCheck) error {
-	printer.Info(command.Output)
+func (c *Config) runCommand(command Command) error {
+	c.logger.Info(command.Output)
 
 	output, err := exec.Command(command.Command, command.Args...).Output()
 	outputString := strings.TrimSpace(string(output[:]))
