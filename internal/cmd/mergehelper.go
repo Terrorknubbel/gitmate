@@ -116,7 +116,7 @@ func branchMergeCommands(featureBranch string, action Action) []Command {
 		{Command: "git", Args: []string{"checkout", featureBranch}, Output: "Merge Master Branch in " + featureBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: featureBranch + " checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
-		{Command: "git", Args: []string{"checkout", finalBranch}, Output: "Merge " + featureBranch + " in staging…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
+		{Command: "git", Args: []string{"checkout", finalBranch}, Output: "Merge " + featureBranch + " in " + finalBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", featureBranch}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
 	}
