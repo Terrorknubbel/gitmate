@@ -4,11 +4,11 @@
 #
 # This script can be executed via
 # curl:
-#   sh -c "$(curl -fsSL https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install)"
+#   curl -fsSL https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install | sh
 # or wget:
-#   sh -c "$(wget -qO- https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install)"
+#   wget -qO- https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install | sh
 # or httpie:
-#   sh -c "$(http --download https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install)"
+#   http --download https://raw.githubusercontent.com/Terrorknubbel/gitmate/master/install | sh
 
 YELLOW='\033[1;33m'
 NC='\033[0m'
