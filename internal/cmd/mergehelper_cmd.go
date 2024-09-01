@@ -2,38 +2,57 @@ package cmd
 
 import (
 	"bufio"
+	"errors"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
 const (
-	Staging Action = iota
-	Master
+	Staging Action = "staging"
+	Master  Action = "master"
 )
 
-type Action int
+type Action string
 
-func (c *Config) RunMergehelper(action Action) {
+func (c *Config) newMergehelperCmd() *cobra.Command {
+	gitCmd := &cobra.Command{
+		Use:   "merge",
+		Short: "Automatisierter Merge vom Feature Branch in Staging oder Master",
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) != 1 || args[0] != string(Staging) && args[0] != string(Master) {
+				//lint:ignore ST1005 Capitalization is fine…
+				return errors.New("Ungültiges Argument. Bitte 'staging' oder 'master' angeben.")
+			}
+			return nil
+		},
+		RunE: c.RunMergehelper,
+	}
+
+	return gitCmd
+}
+
+func (c *Config) RunMergehelper(cmd *cobra.Command, args []string) error {
 	c.logger.Success("Überprüfe Vorbedingungen")
 
 	err := c.RunCommands(prerequisiteCommands())
 	if err != nil {
-		c.logger.Error(err)
-		return
+		return err
 	}
 
 	currentBranch, err := getCurrentBranch()
 	if err != nil {
-		c.logger.Error(err)
-		return
+		return err
 	}
 
 	err = c.RunCommands(branchConditionCommands(currentBranch))
 	if err != nil {
-		c.logger.Error(err)
-		return
+		return err
 	}
+
+	action := Action(args[0])
 
 	switch action {
 	case Staging:
@@ -44,19 +63,19 @@ func (c *Config) RunMergehelper(action Action) {
 
 	err = c.RunCommands(branchRebaseCommands(action))
 	if err != nil {
-		c.logger.Error(err)
-		return
+		return err
 	}
 
 	err = c.RunCommands(branchMergeCommands(currentBranch, action))
 	if err != nil {
-		c.logger.Error(err)
-		return
+		return err
 	}
 
 	c.logger.Success("Merge erfolgreich.")
 
 	handleFinalPush(c)
+
+	return nil
 }
 
 func prerequisiteCommands() []Command {
@@ -105,18 +124,11 @@ func branchRebaseCommands(action Action) []Command {
 }
 
 func branchMergeCommands(featureBranch string, action Action) []Command {
-	var finalBranch string
-	if action == Staging {
-		finalBranch = "staging"
-	} else {
-		finalBranch = "master"
-	}
-
 	return []Command{
 		{Command: "git", Args: []string{"checkout", featureBranch}, Output: "Merge Master Branch in " + featureBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: featureBranch + " checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
-		{Command: "git", Args: []string{"checkout", finalBranch}, Output: "Merge " + featureBranch + " in " + finalBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
+		{Command: "git", Args: []string{"checkout", string(action)}, Output: "Merge " + featureBranch + " in " + string(action) + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
 		{Command: "git", Args: []string{"merge", featureBranch}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
 		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
 	}

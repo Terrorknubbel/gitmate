@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/fatih/color"
@@ -25,11 +26,17 @@ func (c *Config) RunMenuView() {
 	go func() {
 		defer wg.Done()
 		for selectedOption := range outputChan {
+			cmd := c.newMergehelperCmd()
+			cmd.SetArgs([]string{strings.ToLower(selectedOption)})
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+
 			switch selectedOption {
-			case "Staging":
-				c.RunMergehelper(Staging)
-			case "Master":
-				c.RunMergehelper(Master)
+			case "Staging", "Master":
+				if err := cmd.Execute(); err != nil {
+					c.logger.Error(err)
+				}
+				return
 			default:
 				fmt.Println("Diese Option wird aktuell nicht unterstützt.")
 			}

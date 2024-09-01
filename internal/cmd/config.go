@@ -26,6 +26,7 @@ func (c *Config) newRootCmd() (*cobra.Command, error) {
 
 	for _, cmd := range []*cobra.Command{
 		c.newMenuViewPreviewCmd(),
+		c.newMergehelperCmd(),
 	} {
 		if cmd != nil {
 			rootCmd.AddCommand(cmd)

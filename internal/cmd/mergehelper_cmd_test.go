@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"bytes"
-	"io"
 	"os"
 	"os/exec"
 	"testing"
@@ -17,30 +15,25 @@ type LocalRepoSuite struct {
 	remoteRepoDir string
 }
 
-func CaptureStderr(f func(action Action), action Action) string {
-	oldStderr := os.Stderr
-	r, w, _ := os.Pipe()
-	os.Stderr = w
+var stagingArgs = []string{
+	"merge",
+	"staging",
+}
 
+var c = NewConfig()
+
+func CaptureStderr(f func(args []string) error, args []string) string {
 	// Suppress stdout
 	oldStdout := os.Stdout
 	os.Stdout, _ = os.Open(os.DevNull)
 
-	f(action)
+	err := f(args)
+	if err != nil {
+		return err.Error()
+	}
 
-	outC := make(chan string)
-
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	os.Stderr = oldStderr
 	os.Stdout = oldStdout
-
-	return <-outC
+	return ""
 }
 
 func (suite *LocalRepoSuite) SetupTest() {
@@ -73,16 +66,15 @@ func (suite *LocalRepoSuite) TearDownTest() {
 }
 
 func (suite *LocalRepoSuite) Test_PrerequisiteCommands_NotInAGitDir() {
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+	output := CaptureStderr(c.execute, stagingArgs)
 
 	suite.Contains(output, "Du befindest dich in keinem Git Verzeichnis.")
 }
 
 func (suite *LocalRepoSuite) Test_BranchConditionCommands_NotInAFeatureBranch() {
 	exec.Command("git", "init").Run()
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+
+	output := CaptureStderr(c.execute, stagingArgs)
 	suite.Contains(output, "Du befindest dich in keinem Feature Branch.")
 }
 
@@ -90,8 +82,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_CurrentBranchIsStaging
 	exec.Command("git", "init").Run()
 	exec.Command("git", "checkout", "-b", "staging").Run()
 
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+	output := CaptureStderr(c.execute, stagingArgs)
 
 	suite.Contains(output, "Du befindest dich in keinem Feature Branch.")
 }
@@ -104,8 +95,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnstashedChanges() {
 
 	outfile.WriteString("Commit 1")
 
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+	output := CaptureStderr(c.execute, stagingArgs)
 
 	suite.Contains(output, "Es gibt Änderungen, die nicht zum Commit vorgesehen sind. Bitte Committe oder Stashe diese vor einem Merge.")
 }
@@ -122,8 +112,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_NoRemoteBranch() {
 	exec.Command("git", "add", ".").Run()
 	exec.Command("git", "commit", "-m", "commit1").Run()
 
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+	output := CaptureStderr(c.execute, stagingArgs)
 
 	suite.Contains(output, "Der Branch feature_branch existiert nicht auf remote.")
 }
@@ -139,8 +128,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnstagedChanges() {
 	exec.Command("git", "add", ".").Run()
 	exec.Command("git", "commit", "-m", "commit1").Run()
 
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+	output := CaptureStderr(c.execute, stagingArgs)
 
 	suite.Contains(output, "Es gibt nicht gepushte Änderungen. Bitte pushe diese vor einem Merge.")
 }
@@ -166,8 +154,7 @@ func (suite *LocalRepoSuite) Test_BranchConditionCommands_UnmergedChanges() {
 
 	os.Chdir(suite.localRepoDir)
 
-	c := NewConfig()
-	output := CaptureStderr(c.RunMergehelper, Staging)
+	output := CaptureStderr(c.execute, stagingArgs)
 
 	suite.Contains(output, "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus.")
 }
