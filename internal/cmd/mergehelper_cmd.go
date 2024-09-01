@@ -78,10 +78,10 @@ func (c *Config) RunMergehelper(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func prerequisiteCommands() []Command {
-	return []Command{
-		{Command: "git", Args: []string{"--version"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Git ist nicht installiert."},
-		{Command: "git", Args: []string{"rev-parse", "--is-inside-work-tree"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Du befindest dich in keinem Git Verzeichnis."},
+func prerequisiteCommands() GitCommands {
+	return GitCommands{
+		{Args: []string{"--version"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Git ist nicht installiert."},
+		{Args: []string{"rev-parse", "--is-inside-work-tree"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Du befindest dich in keinem Git Verzeichnis."},
 	}
 }
 
@@ -93,27 +93,27 @@ func getCurrentBranch() (string, error) {
 	return strings.TrimSpace(string(output)), nil
 }
 
-func branchConditionCommands(currentBranch string) []Command {
-	return []Command{
-		{Command: "git", Args: []string{"branch", "--show-current"}, Output: "Überprüfe Branch…", Expectation: "*", Forbidden: []string{"master", "main", "staging"}, ErrorMessage: "Du befindest dich in keinem Feature Branch."},
-		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "Prüfe auf Änderungen, die nicht zum Commit vorgesehen sind…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Änderungen, die nicht zum Commit vorgesehen sind. Bitte Committe oder Stashe diese vor einem Merge."},
-		{Command: "git", Args: []string{"ls-remote", "origin", currentBranch}, Output: "Prüfe auf Remote Branch…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Der Branch " + currentBranch + " existiert nicht auf remote."},
-		{Command: "git", Args: []string{"fetch"}, Output: "Aktualisiere Branch Informationen…", Expectation: "*", Forbidden: []string{}, ErrorMessage: ""},
-		{Command: "git", Args: []string{"log", "origin/" + currentBranch + ".." + currentBranch}, Output: "Prüfe auf nicht gepushte Commits…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt nicht gepushte Änderungen. Bitte pushe diese vor einem Merge."},
-		{Command: "git", Args: []string{"log", currentBranch + ".." + "origin/" + currentBranch}, Output: "Prüfe auf nicht gemergte Commits…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus."},
+func branchConditionCommands(currentBranch string) GitCommands {
+	return GitCommands{
+		{Args: []string{"branch", "--show-current"}, Output: "Überprüfe Branch…", Expectation: "*", Forbidden: []string{"master", "main", "staging"}, ErrorMessage: "Du befindest dich in keinem Feature Branch."},
+		{Args: []string{"status", "--porcelain"}, Output: "Prüfe auf Änderungen, die nicht zum Commit vorgesehen sind…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Änderungen, die nicht zum Commit vorgesehen sind. Bitte Committe oder Stashe diese vor einem Merge."},
+		{Args: []string{"ls-remote", "origin", currentBranch}, Output: "Prüfe auf Remote Branch…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Der Branch " + currentBranch + " existiert nicht auf remote."},
+		{Args: []string{"fetch"}, Output: "Aktualisiere Branch Informationen…", Expectation: "*", Forbidden: []string{}, ErrorMessage: ""},
+		{Args: []string{"log", "origin/" + currentBranch + ".." + currentBranch}, Output: "Prüfe auf nicht gepushte Commits…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt nicht gepushte Änderungen. Bitte pushe diese vor einem Merge."},
+		{Args: []string{"log", currentBranch + ".." + "origin/" + currentBranch}, Output: "Prüfe auf nicht gemergte Commits…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus."},
 	}
 }
 
-func branchRebaseCommands(action Action) []Command {
+func branchRebaseCommands(action Action) GitCommands {
 	// TODO: Determine master vs main. (git ls-remote --symref origin HEAD | awk '/^ref:/ {print substr($2, 12)}')
-	masterCommands := []Command{
-		{Command: "git", Args: []string{"checkout", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master checkout fehlgeschlagen."},
-		{Command: "git", Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master pull fehlgeschlagen."},
+	masterCommands := GitCommands{
+		{Args: []string{"checkout", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master checkout fehlgeschlagen."},
+		{Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master pull fehlgeschlagen."},
 	}
 
-	stagingCommands := append(masterCommands, []Command{
-		{Command: "git", Args: []string{"checkout", "staging"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
-		{Command: "git", Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging pull fehlgeschlagen."},
+	stagingCommands := append(masterCommands, GitCommands{
+		{Args: []string{"checkout", "staging"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
+		{Args: []string{"pull", "--rebase"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging pull fehlgeschlagen."},
 	}...)
 
 	if action == Staging {
@@ -123,20 +123,20 @@ func branchRebaseCommands(action Action) []Command {
 	return masterCommands
 }
 
-func branchMergeCommands(featureBranch string, action Action) []Command {
-	return []Command{
-		{Command: "git", Args: []string{"checkout", featureBranch}, Output: "Merge Master Branch in " + featureBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: featureBranch + " checkout fehlgeschlagen."},
-		{Command: "git", Args: []string{"merge", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
-		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
-		{Command: "git", Args: []string{"checkout", string(action)}, Output: "Merge " + featureBranch + " in " + string(action) + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
-		{Command: "git", Args: []string{"merge", featureBranch}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
-		{Command: "git", Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
+func branchMergeCommands(featureBranch string, action Action) GitCommands {
+	return GitCommands{
+		{Args: []string{"checkout", featureBranch}, Output: "Merge Master Branch in " + featureBranch + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: featureBranch + " checkout fehlgeschlagen."},
+		{Args: []string{"merge", "master"}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
+		{Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
+		{Args: []string{"checkout", string(action)}, Output: "Merge " + featureBranch + " in " + string(action) + "…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Staging checkout fehlgeschlagen."},
+		{Args: []string{"merge", featureBranch}, Output: "", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Merge fehlgeschlagen."},
+		{Args: []string{"status", "--porcelain"}, Output: "", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt Merge Konflikte. Bitte behebe diese."},
 	}
 }
 
-func finalPushCommands() []Command {
-	return []Command{
-		{Command: "git", Args: []string{"push"}, Output: "Pushe zum Remote Branch…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Push fehlgeschlagen."},
+func finalPushCommands() GitCommands {
+	return GitCommands{
+		{Args: []string{"push"}, Output: "Pushe zum Remote Branch…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Push fehlgeschlagen."},
 	}
 }
 

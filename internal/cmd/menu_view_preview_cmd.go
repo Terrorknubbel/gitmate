@@ -10,7 +10,7 @@ import (
 func (c *Config) newMenuViewPreviewCmd() *cobra.Command {
 	gitCmd := &cobra.Command{
 		Use:   "preview",
-		Short: "Get the current menu view preview text",
+		Short: "Aktuelle Menü Vorschau",
 		RunE:  c.preview,
 	}
 

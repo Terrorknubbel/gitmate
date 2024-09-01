@@ -19,7 +19,7 @@ func NewConfig() *Config {
 func (c *Config) newRootCmd() (*cobra.Command, error) {
 	rootCmd := &cobra.Command{
 		Use:           "gitmate",
-		Short:         "Run your daily git commands automagically.",
+		Short:         "Automagische Git Befehle",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}

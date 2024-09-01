@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-type Command struct {
-	Command      string
+type GitCommand struct {
 	Args         []string
 	Output       string
 	Expectation  string
@@ -16,7 +15,9 @@ type Command struct {
 	ErrorMessage string
 }
 
-func (c *Config) RunCommands(commands []Command) error {
+type GitCommands []GitCommand
+
+func (c *Config) RunCommands(commands GitCommands) error {
 	for _, command := range commands {
 		err := c.runCommand(command)
 		if err != nil {
@@ -27,10 +28,10 @@ func (c *Config) RunCommands(commands []Command) error {
 	return nil
 }
 
-func (c *Config) runCommand(command Command) error {
+func (c *Config) runCommand(command GitCommand) error {
 	c.logger.Info(command.Output)
 
-	output, err := exec.Command(command.Command, command.Args...).Output()
+	output, err := exec.Command("git", command.Args...).Output()
 	outputString := strings.TrimSpace(string(output[:]))
 
 	if err != nil {
