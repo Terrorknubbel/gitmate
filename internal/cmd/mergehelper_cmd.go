@@ -37,7 +37,7 @@ func (c *Config) newMergehelperCmd() *cobra.Command {
 func (c *Config) RunMergehelper(cmd *cobra.Command, args []string) error {
 	c.logger.Success("Überprüfe Vorbedingungen")
 
-	err := c.RunCommands(prerequisiteCommands())
+	err := c.RunGitCommands(prerequisiteCommands())
 	if err != nil {
 		return err
 	}
@@ -47,7 +47,7 @@ func (c *Config) RunMergehelper(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	err = c.RunCommands(branchConditionCommands(currentBranch))
+	err = c.RunGitCommands(branchConditionCommands(currentBranch))
 	if err != nil {
 		return err
 	}
@@ -61,12 +61,12 @@ func (c *Config) RunMergehelper(cmd *cobra.Command, args []string) error {
 		c.logger.Success("Bringe den Master Branch auf den aktuellsten Stand")
 	}
 
-	err = c.RunCommands(branchRebaseCommands(action))
+	err = c.RunGitCommands(branchRebaseCommands(action))
 	if err != nil {
 		return err
 	}
 
-	err = c.RunCommands(branchMergeCommands(currentBranch, action))
+	err = c.RunGitCommands(branchMergeCommands(currentBranch, action))
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func handleFinalPush(c *Config) {
 	input = strings.TrimSpace(strings.ToLower(input))
 
 	if input == "y" || input == "yes" {
-		err = c.RunCommands(finalPushCommands())
+		err = c.RunGitCommands(finalPushCommands())
 
 		if err != nil {
 			c.logger.Error(err)
