@@ -47,7 +47,6 @@ func infrastructureCommands() GitCommands {
 		{Args: []string{"ls-remote", "origin", "master"}, Output: "Prüfe auf Remote Branch…", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Der master Branch existiert nicht auf remote."},
 		{Args: []string{"fetch"}, Output: "Aktualisiere Branch Informationen…", Expectation: "*", Forbidden: []string{}, ErrorMessage: ""},
 		{Args: []string{"log", "origin/master..master"}, Output: "Prüfe auf nicht gepushte Commits…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt nicht gepushte Änderungen. Bitte pushe diese vor einem Merge."},
-		{Args: []string{"log", "master.." + "origin/master"}, Output: "Prüfe auf nicht gemergte Commits…", Expectation: "", Forbidden: []string{}, ErrorMessage: "Es gibt nicht gemergte Änderungen. Bitte führe ein 'git pull --rebase' vor einem Merge aus."},
 		{Args: []string{"pull", "--rebase"}, Output: "Bringe den master Branch auf den aktuellsten Stand", Expectation: "*", Forbidden: []string{}, ErrorMessage: "Master pull fehlgeschlagen."},
 	}
 }
